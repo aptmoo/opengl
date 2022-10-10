@@ -1,11 +1,11 @@
 #include "pch.h"
-#include "engine/shader.h"
-#include "engine/glutils.h"
+#include "gl/shader.h"
+#include "gl/glutils.h"
 
-#include "engine/mesh.h"
+#include "gl/mesh.h"
 
-#include "engine/vertexbuffer.h"
-#include "engine/indexbuffer.h"
+#include "gl/indexbuffer.h"
+#include "gl/vertexarray.h"
 
 int main(void)
 {
@@ -35,18 +35,18 @@ int main(void)
 
     std::printf("%s\n", glGetString(GL_VERSION));
 
-    // float positions[] = {
-    //     -0.5f, -0.5f,
-    //     0.5f, -0.5f,
-    //     0.5f, 0.5f,
-    //     -0.5f, 0.5f
-    // };
+    float positions[] = {
+        -0.5f, -0.5f,
+        0.5f, -0.5f,
+        0.5f, 0.5f,
+        -0.5f, 0.5f
+    };
 
-    // unsigned int indices[] = 
-    // {
-    //     0, 1, 2,
-    //     2, 3, 0
-    // };
+    unsigned int indices[] = 
+    {
+        0, 1, 2,
+        2, 3, 0
+    };
 
 
     // unsigned int buffer;
@@ -62,22 +62,32 @@ int main(void)
     // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
     // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int)*6, indices, GL_STATIC_DRAW);
 
-    std::vector<SimpleVertex> verts = 
-    {
-        {glm::vec2(-0.5f, -0.5f), glm::vec3(1.0f, 0.0f, 0.0f)},
-        {glm::vec2(0.5f, -0.5f), glm::vec3(0.0f, 1.0f, 0.0f)},
-        {glm::vec2(0.5f, 0.5f), glm::vec3(1.0f)},
-        {glm::vec2(-0.5f, 0.5f), glm::vec3(0.0f, 0.0f, 1.0f)},
-    };
+    // std::vector<SimpleVertex> verts = 
+    // {
+    //     {glm::vec2(-0.5f, -0.5f), glm::vec3(1.0f, 0.0f, 0.0f)},
+    //     {glm::vec2(0.5f, -0.5f), glm::vec3(0.0f, 1.0f, 0.0f)},
+    //     {glm::vec2(0.5f, 0.5f), glm::vec3(1.0f)},
+    //     {glm::vec2(-0.5f, 0.5f), glm::vec3(0.0f, 0.0f, 1.0f)},
+    // };
 
-    std::vector<unsigned int> indices = 
-    {
-        0, 1, 2,
-        2, 3, 0
-    };
+    // std::vector<unsigned int> indices = 
+    // {
+    //     0, 1, 2,
+    //     2, 3, 0
+    // };
 
 
-    SimpleMesh msh(verts, indices);
+    // SimpleMesh msh(verts, indices);;
+
+
+    VertexArray va;
+    VertexBuffer vb(positions, 4 * 2 * sizeof(float));
+    IndexBuffer ib(indices, 6);
+
+    VertexBufferLayout layout;
+    layout.AddFloat(2);
+
+    va.AddBuffer(vb, layout);
 
     Shader test;
     test.Compile(ParseShader("shaders/debug.shader"));
@@ -107,9 +117,11 @@ int main(void)
 
         test.Use();
         test.SetVec4("u_Color", r, 0.3f, 0.8f, 1.0f);
-
-        msh.Draw();
         
+        va.Bind();
+        ib.Bind();
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
