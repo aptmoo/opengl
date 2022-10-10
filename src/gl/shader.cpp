@@ -34,7 +34,49 @@ ShaderProgramSource ParseShader(const std::string &path)
     return {ss[0].str(), ss[1].str()};
 }
 
-static unsigned int CompileShader(unsigned int type, const std::string &__source)
+Shader::~Shader()
+{
+    if(gl_ID != 0)
+    {
+        GLCall(glDeleteProgram(gl_ID));
+        std::printf("[Program ID: %d] Successfully unloaded\n", gl_ID);
+    }
+}
+
+Shader &Shader::Use()
+{
+    GLCall(glUseProgram(gl_ID));
+    return *this;
+}
+
+void Shader::Compile(ShaderProgramSource source)
+{
+    gl_ID = LinkProgram(source.vertex, source.fragment);
+}
+
+void Shader::SetFloat(const char* name, float value)
+{
+    GLCall(glUniform1f(GetUniformLocation(name), value));
+}
+
+void Shader::SetVec4(const char* name, glm::vec4 value)
+{
+    GLCall(glUniform4f(GetUniformLocation(name), value.x, value.y, value.z, value.w));
+}
+void Shader::SetVec4(const char* name, float x, float y, float z, float w)
+{
+    GLCall(glUniform4f(GetUniformLocation(name), x, y, z, w));
+}
+
+int Shader::GetUniformLocation(const char* name)
+{
+    GLCall(unsigned int location = glGetUniformLocation(gl_ID, name));
+    if(location == -1)
+        std::printf("[Program ID: %d] Shader uniform '%s' not found\n", gl_ID, name);
+    return location;
+}
+
+unsigned int Shader::CompileShader(unsigned int type, const std::string &__source)
 {
     unsigned int id = glCreateShader(type);
     const char *source = __source.c_str();
@@ -56,7 +98,7 @@ static unsigned int CompileShader(unsigned int type, const std::string &__source
     return id;
 }
 
-static int LinkShader(const std::string &vertex, const std::string &fragment)
+unsigned int Shader::LinkProgram(const std::string &vertex, const std::string &fragment)
 {
     unsigned int program = glCreateProgram();
 
@@ -127,38 +169,4 @@ static int LinkShader(const std::string &vertex, const std::string &fragment)
     std::printf("[Program ID: %d] Successfully loaded\n", program);
 
     return program;
-}
-
-Shader::~Shader()
-{
-    if(gl_id != 0)
-    {
-        glDeleteProgram(gl_id);
-        std::printf("[Program ID: %d] Successfully unloaded\n", gl_id);
-    }
-}
-
-Shader &Shader::Use()
-{
-    glUseProgram(gl_id);
-    return *this;
-}
-
-void Shader::Compile(ShaderProgramSource source)
-{
-    gl_id = LinkShader(source.vertex, source.fragment);
-}
-
-void Shader::SetFloat(const char* name, float value)
-{
-    glUniform1f(glGetUniformLocation(gl_id, name), value);
-}
-
-void Shader::SetVec4(const char* name, glm::vec4 value)
-{
-    glUniform4f(glGetUniformLocation(gl_id, name), value.x, value.y, value.z, value.w);
-}
-void Shader::SetVec4(const char* name, float x, float y, float z, float w)
-{
-    glUniform4f(glGetUniformLocation(gl_id, name), x, y, z, w);
 }

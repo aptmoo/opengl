@@ -25,5 +25,6 @@ uniform vec4 u_Color;
 
 void main()
 {
+    color = u_Color;
     // color = vec4(vColor.xyz, 1.0);
 }

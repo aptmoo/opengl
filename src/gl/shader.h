@@ -1,6 +1,8 @@
 #pragma once
 #include "pch.h"
 
+// TODO: Use GLCall wrapper
+
 struct ShaderProgramSource
 {
     std::string vertex;
@@ -19,7 +21,7 @@ public:
     Shader& Use();
 
     void Compile(ShaderProgramSource source);
-    unsigned int GetId(){return gl_id;};
+    unsigned int GetId(){return gl_ID;};
 
     void SetFloat(const char* name, float value);
     void SetInt(const char* name, int value);
@@ -27,6 +29,10 @@ public:
     void SetVec4(const char* name, glm::vec4 value);
     void SetVec4(const char* name, float x, float y, float z, float w);
 
+    int GetUniformLocation(const char* name);
+
 private:
-    unsigned int gl_id;
+    unsigned int CompileShader(unsigned int type, const std::string &__source);
+    unsigned int LinkProgram(const std::string &vertex, const std::string &fragment);
+    unsigned int gl_ID;
 };

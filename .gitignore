@@ -32,6 +32,7 @@
 *.app
 
 .sconsign.dblite
+.vscode/
 
 bin/app
 bin/game.log

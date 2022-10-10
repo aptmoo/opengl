@@ -4,6 +4,9 @@
 
 #include "engine/mesh.h"
 
+#include "engine/vertexbuffer.h"
+#include "engine/indexbuffer.h"
+
 int main(void)
 {
 
@@ -44,6 +47,7 @@ int main(void)
     //     0, 1, 2,
     //     2, 3, 0
     // };
+
 
     // unsigned int buffer;
     // glGenBuffers(1, &buffer);
@@ -101,6 +105,7 @@ int main(void)
 
         r += increment * delta;
 
+        test.Use();
         test.SetVec4("u_Color", r, 0.3f, 0.8f, 1.0f);
 
         msh.Draw();
