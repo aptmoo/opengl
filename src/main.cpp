@@ -1,11 +1,18 @@
 #include "pch.h"
 #include "gl/shader.h"
+#include "vendor/stb_image.h"
 #include "gl/glutils.h"
 
-#include "gl/mesh.h"
+#include "gl/texture.h"
+#include "gl/renderer.h"
 
-#include "gl/indexbuffer.h"
-#include "gl/vertexarray.h"
+float px, py;
+
+static void MouseCursorPosCallback(GLFWwindow *window, double x, double y)
+{
+    px = (float)x;
+    py = (float)y;
+}
 
 int main(void)
 {
@@ -19,6 +26,9 @@ int main(void)
     if (!glfwInit())
         return -1;
 
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, false);
 
     window = glfwCreateWindow(1280, 720, "Hello World", nullptr, nullptr);
@@ -30,17 +40,29 @@ int main(void)
 
     glfwMakeContextCurrent(window);
 
+    glfwSetCursorPosCallback(window, MouseCursorPosCallback);
+
     if (glewInit() != GLEW_OK)
         return -1;
 
     std::printf("%s\n", glGetString(GL_VERSION));
 
+    // float positions[] = {
+    //     -0.5f, -0.5f, 0.0f, 0.0f,
+    //     0.5f, -0.5f, 1.0f, 0.0f,
+    //     0.5f, 0.5f, 1.0f, 1.0f,
+    //     -0.5f, 0.5f, 0.0f, 1.0f
+    // };
+
+
     float positions[] = {
-        -0.5f, -0.5f,
-        0.5f, -0.5f,
-        0.5f, 0.5f,
-        -0.5f, 0.5f
+        100.0f, 100.0f, 0.0f, 0.0f, // 0
+        200.0f, 100.0f, 1.0f, 0.0f, // 1
+        200.0f, 200.0f, 1.0f, 1.0f, // 2
+        100.0f, 200.0f, 0.0f, 1.0f  // 3
     };
+
+
 
     unsigned int indices[] = 
     {
@@ -49,42 +71,12 @@ int main(void)
     };
 
 
-    // unsigned int buffer;
-    // glGenBuffers(1, &buffer);
-    // glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(float)*8, positions, GL_STATIC_DRAW);
-
-    // glEnableVertexAttribArray(0);
-    // glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), 0);
-
-    // unsigned int ibo;
-    // glGenBuffers(1, &ibo);
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int)*6, indices, GL_STATIC_DRAW);
-
-    // std::vector<SimpleVertex> verts = 
-    // {
-    //     {glm::vec2(-0.5f, -0.5f), glm::vec3(1.0f, 0.0f, 0.0f)},
-    //     {glm::vec2(0.5f, -0.5f), glm::vec3(0.0f, 1.0f, 0.0f)},
-    //     {glm::vec2(0.5f, 0.5f), glm::vec3(1.0f)},
-    //     {glm::vec2(-0.5f, 0.5f), glm::vec3(0.0f, 0.0f, 1.0f)},
-    // };
-
-    // std::vector<unsigned int> indices = 
-    // {
-    //     0, 1, 2,
-    //     2, 3, 0
-    // };
-
-
-    // SimpleMesh msh(verts, indices);;
-
-
     VertexArray va;
-    VertexBuffer vb(positions, 4 * 2 * sizeof(float));
+    VertexBuffer vb(positions, 4 * 4 * sizeof(float));
     IndexBuffer ib(indices, 6);
 
     VertexBufferLayout layout;
+    layout.AddFloat(2);
     layout.AddFloat(2);
 
     va.AddBuffer(vb, layout);
@@ -92,6 +84,26 @@ int main(void)
     Shader test;
     test.Compile(ParseShader("shaders/debug.shader"));
     test.Use();
+
+    Texture tex("textures/heit.png");
+    tex.Bind();
+
+    test.SetInt("u_Texture", 0);
+
+    Renderer thingy;
+
+    glm::mat4 proj = glm::ortho(0.0f, 1280.0f, 0.0f, 720.0f, -1.0f, 1.0f);
+    // glm::mat4 proj = glm::ortho(0.0f, 960.0f, 0.0f, 540.0f, -1.0f, 1.0f);
+    glm::mat4 ident = glm::mat4(1.0f);
+    glm::vec3 trvec = glm::vec3(-100, 0, 0);
+    glm::mat4 view = glm::translate(ident, trvec);
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(200, 200, 0));
+
+    glm::mat4 mvp = proj * view * model;
+
+    test.SetMat4("u_MVP", mvp);
+
+
 
     float delta = 0.0f;
     float previousFrameTime = 0.0f;
@@ -106,7 +118,7 @@ int main(void)
         delta = currentFrameTime - previousFrameTime;
         previousFrameTime = currentFrameTime;
 
-        glClear(GL_COLOR_BUFFER_BIT);
+        thingy.Clear();
 
         if(r > 1.0f)
             increment = -0.5f;
@@ -114,14 +126,9 @@ int main(void)
             increment = 0.5f;
 
         r += increment * delta;
-
-        test.Use();
-        test.SetVec4("u_Color", r, 0.3f, 0.8f, 1.0f);
         
-        va.Bind();
-        ib.Bind();
-
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        test.SetVec4("u_Color", r, 0.3f, 0.8f, 1.0f);
+        thingy.Draw(va, ib, test);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -130,3 +137,4 @@ int main(void)
     glfwTerminate();
     return 0;
 }
+

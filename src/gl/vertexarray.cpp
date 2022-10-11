@@ -1,13 +1,14 @@
 #include "vertexarray.h"
 
 VertexArray::VertexArray()
+    : gl_ID(0)
 {
-    GLCall( glGenVertexArrays(1, &m_RendererID) );
+    GLCall( glGenVertexArrays(1, &gl_ID) );
 }
 
 VertexArray::~VertexArray()
 {
-    GLCall( glDeleteVertexArrays(1, &m_RendererID) );
+    GLCall( glDeleteVertexArrays(1, &gl_ID) );
 }
 
 void VertexArray::AddBuffer(VertexBuffer& vb, const VertexBufferLayout& layout)
@@ -15,22 +16,19 @@ void VertexArray::AddBuffer(VertexBuffer& vb, const VertexBufferLayout& layout)
     Bind();
     vb.Bind();
     const std::vector<VertexBufferElement> elements = layout.GetElements();
-    std::cout << elements.size();
     uintptr_t offset = 0;
     for (unsigned int i = 0; i < elements.size(); i++)
     {
-        std::printf("%d", layout.GetStride());
         const VertexBufferElement element = elements[i];
         GLCall( glEnableVertexAttribArray(i) );
-        GLCall( glVertexAttribPointer(i, element.count, element.type, element.normalized,
-                                      layout.GetStride(), (void*)offset) );
+        GLCall( glVertexAttribPointer(i, element.count, element.type, element.normalized, layout.GetStride(), (void*)offset) );
         offset += element.count * VertexBufferElement::GetSizeOfType(element.type);
     }
 }
 
 void VertexArray::Bind()
 {
-    GLCall( glBindVertexArray(m_RendererID) );
+    GLCall( glBindVertexArray(gl_ID) );
 }
 
 void VertexArray::Unbind()

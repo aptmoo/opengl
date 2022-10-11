@@ -4,27 +4,32 @@
 #version 330 core
 
 layout(location = 0) in vec2 vertexPosition;
-layout(location = 1) in vec3 vertexColor;
+layout(location = 1) in vec2 uvcoord;
 
-out vec3 vColor;
+uniform mat4 u_MVP;
+
+out vec2 v_TexCoord;
 
 void main()
 {
-    vColor = vertexColor;
-    gl_Position = vec4(vertexPosition, 1.0, 1.0);
+    v_TexCoord = uvcoord;
+    gl_Position = u_MVP * vec4(vertexPosition, 1.0, 1.0);
 }
 
 #shader fragment
 #version 330 core
 
-in vec3 vColor;
+in vec2 v_TexCoord;
 
 out vec4 color;
 
 uniform vec4 u_Color;
+uniform sampler2D u_Texture;
 
 void main()
 {
-    color = u_Color;
+    vec4 texcolor = texture(u_Texture, v_TexCoord) * u_Color;
+
+    color = texcolor;
     // color = vec4(vColor.xyz, 1.0);
 }
