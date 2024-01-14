@@ -6,12 +6,22 @@
 #include "gl/texture.h"
 #include "gl/renderer.h"
 
-float px, py;
+int window_w = 1280;
+int window_h = 720;
 
-static void MouseCursorPosCallback(GLFWwindow *window, double x, double y)
+float sz = 5;
+
+
+static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    px = (float)x;
-    py = (float)y;
+    sz += (float)yoffset;
+}
+
+static void FrameBufferSizeCallback(GLFWwindow* window, int w, int h)
+{
+    glViewport(0, 0, w, h);
+    window_w = w;
+    window_h = h;
 }
 
 int main(void)
@@ -38,9 +48,10 @@ int main(void)
         return -1;
     }
 
-    glfwMakeContextCurrent(window);
+    glfwSetFramebufferSizeCallback(window, FrameBufferSizeCallback);
+    glfwSetScrollCallback(window, ScrollCallback);
 
-    glfwSetCursorPosCallback(window, MouseCursorPosCallback);
+    glfwMakeContextCurrent(window);
 
     if (glewInit() != GLEW_OK)
         return -1;
@@ -55,11 +66,19 @@ int main(void)
     // };
 
 
-    float positions[] = {
-        100.0f, 100.0f, 0.0f, 0.0f, // 0
-        200.0f, 100.0f, 1.0f, 0.0f, // 1
-        200.0f, 200.0f, 1.0f, 1.0f, // 2
-        100.0f, 200.0f, 0.0f, 1.0f  // 3
+    // float positions[] = {
+    //     -50.0f, -50.0f, 0.0f, 0.0f, // 0
+    //     50.0f, -50.0f, 1.0f, 0.0f, // 1
+    //     50.0f, 50.0f, 1.0f, 1.0f, // 2
+    //     -50.0f, 50.0f, 0.0f, 1.0f  // 3
+    // };
+
+    std::vector<float> positions =
+    {
+        -50.0f, -50.0f, 0.0f, 0.0f, // 0
+        50.0f, -50.0f, 1.0f, 0.0f, // 1
+        50.0f, 50.0f, 1.0f, 1.0f, // 2
+        -50.0f, 50.0f, 0.0f, 1.0f  // 3
     };
 
 
@@ -70,9 +89,8 @@ int main(void)
         2, 3, 0
     };
 
-
     VertexArray va;
-    VertexBuffer vb(positions, 4 * 4 * sizeof(float));
+    VertexBuffer vb(positions.data(), positions.size() * sizeof(float));
     IndexBuffer ib(indices, 6);
 
     VertexBufferLayout layout;
@@ -92,18 +110,12 @@ int main(void)
 
     Renderer thingy;
 
-    glm::mat4 proj = glm::ortho(0.0f, 1280.0f, 0.0f, 720.0f, -1.0f, 1.0f);
-    // glm::mat4 proj = glm::ortho(0.0f, 960.0f, 0.0f, 540.0f, -1.0f, 1.0f);
-    glm::mat4 ident = glm::mat4(1.0f);
-    glm::vec3 trvec = glm::vec3(-100, 0, 0);
-    glm::mat4 view = glm::translate(ident, trvec);
-    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(200, 200, 0));
-
-    glm::mat4 mvp = proj * view * model;
-
-    test.SetMat4("u_MVP", mvp);
+    
+    // glm::mat4 proj = glm::perspective(glm::radians(45.f), (float)1280/(float)720, 0.1f, 100.0f);
+    glm::mat4 view = glm::mat4(1.0f);
 
 
+    
 
     float delta = 0.0f;
     float previousFrameTime = 0.0f;
@@ -126,6 +138,18 @@ int main(void)
             increment = 0.5f;
 
         r += increment * delta;
+
+        double px, py;
+
+        glfwGetCursorPos(window, &px, &py);
+
+        glm::mat4 proj = glm::ortho(0.0f, (float)window_w, 0.0f, (float)window_h, -1.0f, 1.0f);
+
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(px, -py + window_h, 0));
+        model = glm::scale(model, glm::vec3(sz, sz, 0));
+
+        glm::mat4 mvp = proj * view * model;
+        test.SetMat4("u_MVP", mvp);
         
         test.SetVec4("u_Color", r, 0.3f, 0.8f, 1.0f);
         thingy.Draw(va, ib, test);
